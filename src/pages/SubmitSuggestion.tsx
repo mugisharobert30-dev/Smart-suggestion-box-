@@ -36,7 +36,7 @@ export default function SubmitSuggestion() {
   const applySuggestedCategory = () => {
     if (suggestedCategory) {
       const categoryKey = Object.entries(CATEGORY_LABELS).find(
-        ([_, label]) => label === suggestedCategory
+        ([, label]) => label === suggestedCategory
       )?.[0] as SuggestionCategory
       if (categoryKey) {
         setFormData({ ...formData, category: categoryKey })
@@ -56,19 +56,21 @@ export default function SubmitSuggestion() {
       return
     }
 
-    // Identity fields are optional now
-
     try {
       const referenceNumber = generateReferenceNumber()
-      
-      const { data, error: submitError } = await supabase
+      const hasIdentity = showIdentity && (formData.submitterName?.trim() || formData.submitterEmail?.trim())
+      const isAnonymous = !hasIdentity
+
+      const { error: submitError } = await supabase
         .from('suggestions')
         .insert({
           reference_number: referenceNumber,
           title: formData.title.trim(),
           description: formData.description.trim(),
           category: formData.category,
-          anonymous: formData.anonymous,
+          anonymous: isAnonymous,
+          submitter_name: hasIdentity ? formData.submitterName.trim() || null : null,
+          submitter_email: hasIdentity ? formData.submitterEmail.trim() || null : null,
           status: 'submitted',
           priority: false
         })

@@ -14,7 +14,7 @@ export type SuggestionStatus =
   | 'in_progress'
   | 'rejected'
 
-export type UserRole = 'employee' | 'admin'
+export type UserRole = 'employee' | 'admin' | 'superadmin'
 
 export interface Suggestion {
   id: string
@@ -24,6 +24,8 @@ export interface Suggestion {
   category: SuggestionCategory
   anonymous: boolean
   submitter_id: string | null
+  submitter_name: string | null
+  submitter_email: string | null
   status: SuggestionStatus
   priority: boolean
   attachment_path: string | null

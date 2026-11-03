@@ -1,3 +1,9 @@
+export const ADMIN_ROLES = ['admin', 'superadmin']
+
+export function isAdminRole(role?: string | null): boolean {
+  return ADMIN_ROLES.includes((role || '').trim().toLowerCase())
+}
+
 export function generateReferenceNumber(): string {
   const date = new Date()
   const year = date.getFullYear().toString().slice(-2)

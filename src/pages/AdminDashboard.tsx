@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   LogOut, Filter, Search, Download, MessageSquare, 
-  Clock, CheckCircle, AlertCircle, XCircle, Star 
+  Clock, CheckCircle, AlertCircle, XCircle, Star,
+  UserPlus, Users
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { formatDate } from '../utils/helpers'
+import { formatDate, isAdminRole } from '../utils/helpers'
 import { 
   CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS, 
 } from '../types'
@@ -23,6 +24,13 @@ interface Suggestion {
   priority: boolean
   created_at: string
   updated_at: string
+}
+
+interface AdminProfile {
+  user_id: string
+  display_name: string | null
+  role: string
+  created_at: string
 }
 
 export default function AdminDashboard() {
@@ -45,6 +53,15 @@ export default function AdminDashboard() {
     accepted: 0,
     completed: 0
   })
+  const [role, setRole] = useState('')
+  const [showAdmins, setShowAdmins] = useState(false)
+  const [admins, setAdmins] = useState<AdminProfile[]>([])
+  const [adminForm, setAdminForm] = useState({ displayName: '', email: '', password: '' })
+  const [adminSaving, setAdminSaving] = useState(false)
+  const [adminError, setAdminError] = useState('')
+  const [adminSuccess, setAdminSuccess] = useState('')
+  const [editingAdmin, setEditingAdmin] = useState<AdminProfile | null>(null)
+  const [adminEditForm, setAdminEditForm] = useState({ displayName: '', role: 'admin', password: '' })
 
   useEffect(() => {
     checkAuth()
@@ -54,6 +71,7 @@ export default function AdminDashboard() {
     if (user) {
       fetchSuggestions()
       fetchStats()
+      fetchAdmins()
     }
   }, [user])
 
@@ -70,13 +88,120 @@ export default function AdminDashboard() {
       .eq('user_id', session.user.id)
       .single()
 
-    if (!profile || profile.role !== 'admin') {
+    if (!profile || !isAdminRole(profile.role)) {
       await supabase.auth.signOut()
       navigate('/admin/login')
       return
     }
 
+    setRole((profile.role || '').toLowerCase())
     setUser(session.user)
+  }
+
+  const fetchAdmins = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('user_id, display_name, role, created_at')
+      .in('role', ['admin', 'superadmin'])
+      .order('created_at', { ascending: true })
+
+    if (!error && data) setAdmins(data as AdminProfile[])
+  }
+
+  const createAdmin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAdminError('')
+    setAdminSuccess('')
+
+    if (!adminForm.displayName.trim() || !adminForm.email.trim()) {
+      setAdminError('Name and email are required.')
+      return
+    }
+    if (adminForm.password.length < 6) {
+      setAdminError('Password must be at least 6 characters.')
+      return
+    }
+
+    setAdminSaving(true)
+    try {
+      const { error } = await supabase.rpc('create_admin_account', {
+        p_email: adminForm.email.trim(),
+        p_password: adminForm.password,
+        p_display_name: adminForm.displayName.trim()
+      })
+
+      if (error) throw error
+
+      setAdminSuccess(`Admin account created for ${adminForm.email.trim()}.`)
+      setAdminForm({ displayName: '', email: '', password: '' })
+      fetchAdmins()
+    } catch (err: any) {
+      setAdminError(err?.message || 'Failed to create admin.')
+    } finally {
+      setAdminSaving(false)
+    }
+  }
+
+  const startEditAdmin = (admin: AdminProfile) => {
+    setAdminError('')
+    setAdminSuccess('')
+    setEditingAdmin(admin)
+    setAdminEditForm({
+      displayName: admin.display_name || '',
+      role: admin.role === 'superadmin' ? 'superadmin' : 'admin',
+      password: ''
+    })
+  }
+
+  const saveAdminChanges = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingAdmin) return
+
+    setAdminError('')
+    setAdminSuccess('')
+    setAdminSaving(true)
+    try {
+      const { error } = await supabase.rpc('update_admin_account', {
+        p_user_id: editingAdmin.user_id,
+        p_display_name: adminEditForm.displayName.trim(),
+        p_role: adminEditForm.role,
+        p_password: adminEditForm.password ? adminEditForm.password : null
+      })
+
+      if (error) throw error
+
+      setAdminSuccess('Admin account updated.')
+      setEditingAdmin(null)
+      fetchAdmins()
+    } catch (err: any) {
+      setAdminError(err?.message || 'Failed to update admin.')
+    } finally {
+      setAdminSaving(false)
+    }
+  }
+
+  const deleteAdmin = async (admin: AdminProfile) => {
+    const label = admin.display_name || admin.user_id
+    if (!window.confirm(`Delete admin "${label}"? This cannot be undone.`)) return
+
+    setAdminError('')
+    setAdminSuccess('')
+    setAdminSaving(true)
+    try {
+      const { error } = await supabase.rpc('delete_admin_account', {
+        p_user_id: admin.user_id
+      })
+
+      if (error) throw error
+
+      setAdminSuccess('Admin account deleted.')
+      if (editingAdmin?.user_id === admin.user_id) setEditingAdmin(null)
+      fetchAdmins()
+    } catch (err: any) {
+      setAdminError(err?.message || 'Failed to delete admin.')
+    } finally {
+      setAdminSaving(false)
+    }
   }
 
   const fetchSuggestions = async () => {
@@ -227,13 +352,24 @@ export default function AdminDashboard() {
             <div className="flex items-center">
               <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600"
-            >
-              <LogOut className="h-4 w-4 mr-1" />
-              Sign Out
-            </button>
+            <div className="flex items-center space-x-2">
+              {role === 'superadmin' && (
+                <button
+                  onClick={() => setShowAdmins(true)}
+                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600"
+                >
+                  <Users className="h-4 w-4 mr-1" />
+                  Manage Admins
+                </button>
+              )}
+              <button
+                onClick={handleSignOut}
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600"
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -424,6 +560,14 @@ export default function AdminDashboard() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-1">{selectedSuggestion.title}</h3>
                   <p className="text-sm text-gray-500 mb-2">Ref: {selectedSuggestion.reference_number}</p>
+                  <p className="text-sm text-gray-600 mb-2">Type: {selectedSuggestion.anonymous ? 'Anonymous' : 'Identified'}</p>
+                  {!selectedSuggestion.anonymous && ((selectedSuggestion as any).submitter_name || (selectedSuggestion as any).submitter_email) && (
+                    <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                      <p className="font-medium text-blue-900">Submitter Information:</p>
+                      {(selectedSuggestion as any).submitter_name && <p className="text-blue-800">Name: {(selectedSuggestion as any).submitter_name}</p>}
+                      {(selectedSuggestion as any).submitter_email && <p className="text-blue-800">Email: {(selectedSuggestion as any).submitter_email}</p>}
+                    </div>
+                  )}
                   <p className="text-gray-700 whitespace-pre-wrap">{selectedSuggestion.description}</p>
                 </div>
 
@@ -473,6 +617,167 @@ export default function AdminDashboard() {
                   >
                     Add Response
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAdmins && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Manage Admins</h2>
+                  <p className="text-sm text-gray-500">Create an account and grant it admin access.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAdmins(false)
+                    setAdminError('')
+                    setAdminSuccess('')
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                {adminError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">{adminError}</div>
+                )}
+                {adminSuccess && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">{adminSuccess}</div>
+                )}
+
+                <form onSubmit={createAdmin} className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Full name"
+                      value={adminForm.displayName}
+                      onChange={(e) => setAdminForm({ ...adminForm, displayName: e.target.value })}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email address"
+                      value={adminForm.email}
+                      onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <input
+                    type="password"
+                    placeholder="Temporary password (min 6 characters)"
+                    value={adminForm.password}
+                    onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={adminSaving}
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {adminSaving ? 'Creating...' : 'Create Admin'}
+                  </button>
+                </form>
+
+                {editingAdmin && (
+                  <form onSubmit={saveAdminChanges} className="p-4 border border-blue-200 bg-blue-50 rounded-md space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-blue-900">
+                        Edit {editingAdmin.display_name || 'admin'}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setEditingAdmin(null)}
+                        className="text-sm text-blue-700 hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Full name"
+                        value={adminEditForm.displayName}
+                        onChange={(e) => setAdminEditForm({ ...adminEditForm, displayName: e.target.value })}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <select
+                        value={adminEditForm.role}
+                        onChange={(e) => setAdminEditForm({ ...adminEditForm, role: e.target.value })}
+                        disabled={editingAdmin.user_id === user?.id}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="superadmin">Superadmin</option>
+                      </select>
+                    </div>
+                    <input
+                      type="password"
+                      placeholder="New password (leave blank to keep current)"
+                      value={adminEditForm.password}
+                      onChange={(e) => setAdminEditForm({ ...adminEditForm, password: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={adminSaving}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {adminSaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </form>
+                )}
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Existing Admins</h3>
+                  <div className="border border-gray-200 rounded-md divide-y divide-gray-200">
+                    {admins.length === 0 ? (
+                      <p className="p-3 text-sm text-gray-500">No admins found.</p>
+                    ) : (
+                      admins.map((admin) => (
+                        <div key={admin.user_id} className="p-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{admin.display_name || 'Unnamed admin'}</p>
+                            <p className="text-xs text-gray-500 font-mono truncate">{admin.user_id}</p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                admin.role === 'superadmin'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-blue-100 text-blue-700'
+                              }`}
+                            >
+                              {admin.role}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => startEditAdmin(admin)}
+                              className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                            >
+                              Edit
+                            </button>
+                            {admin.user_id !== user?.id && (
+                              <button
+                                type="button"
+                                onClick={() => deleteAdmin(admin)}
+                                disabled={adminSaving}
+                                className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

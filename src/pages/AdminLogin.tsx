@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Shield, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { isAdminRole } from '../utils/helpers'
 
 export default function AdminLogin() {
   const navigate = useNavigate()
@@ -30,13 +31,18 @@ export default function AdminLogin() {
         .from('profiles')
         .select('role')
         .eq('user_id', data.user.id)
-        .single()
+        .maybeSingle()
 
       if (profileError) throw profileError
 
-      if (profile.role !== 'admin') {
+      if (!profile) {
         await supabase.auth.signOut()
-        throw new Error('Access denied. Admin privileges required.')
+        throw new Error('No profile found for this account. Add a row to the profiles table with role "admin".')
+      }
+
+      if (!isAdminRole(profile.role)) {
+        await supabase.auth.signOut()
+        throw new Error('Access denied. This account is not an admin. Set its role to "admin" or "superadmin" in the profiles table.')
       }
 
       navigate('/admin/dashboard')
