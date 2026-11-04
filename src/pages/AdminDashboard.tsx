@@ -45,6 +45,7 @@ export default function AdminDashboard() {
     priority: ''
   })
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null)
+  const [activeTab, setActiveTab] = useState<'details' | 'manage' | 'respond'>('details')
   const [responseText, setResponseText] = useState('')
   const [updating, setUpdating] = useState(false)
   const [stats, setStats] = useState({
@@ -477,36 +478,42 @@ export default function AdminDashboard() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ref</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">Loading...</td>
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">Loading...</td>
                   </tr>
                 ) : suggestions.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">No suggestions found</td>
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">No suggestions found</td>
                   </tr>
                 ) : (
                   suggestions.map((suggestion) => (
-                    <tr key={suggestion.id} className="hover:bg-gray-50">
+                    <tr
+                      key={suggestion.id}
+                      onClick={() => {
+                        setSelectedSuggestion(suggestion)
+                        setActiveTab('details')
+                      }}
+                      className="hover:bg-gray-50 cursor-pointer"
+                    >
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-mono text-blue-600">
                         {suggestion.reference_number}
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
-                          {suggestion.title}
+                        <div className="flex items-center gap-2">
+                          {suggestion.priority && (
+                            <Star className="h-4 w-4 text-orange-500 fill-current shrink-0" />
+                          )}
+                          <span className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                            {suggestion.title}
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {CATEGORY_LABELS[suggestion.category]}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[suggestion.status]}`}>
@@ -514,25 +521,19 @@ export default function AdminDashboard() {
                           <span className="ml-1">{STATUS_LABELS[suggestion.status]}</span>
                         </span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        {suggestion.priority ? (
-                          <Star className="h-4 w-4 text-orange-500 fill-current" />
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {suggestion.anonymous ? 'Anonymous' : 'Identified'}
-                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(suggestion.created_at)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-right">
                         <button
-                          onClick={() => setSelectedSuggestion(suggestion)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedSuggestion(suggestion)
+                            setActiveTab('details')
+                          }}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          Manage
+                          View
                         </button>
                       </td>
                     </tr>
@@ -547,79 +548,140 @@ export default function AdminDashboard() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-4 sm:p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Manage Suggestion</h2>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 break-words">{selectedSuggestion.title}</h2>
+                    <p className="text-sm text-gray-500">Ref: {selectedSuggestion.reference_number}</p>
+                  </div>
                   <button
                     onClick={() => setSelectedSuggestion(null)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none shrink-0"
                   >
                     ×
                   </button>
                 </div>
-              </div>
 
-              <div className="p-4 sm:p-6 space-y-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1 break-words">{selectedSuggestion.title}</h3>
-                  <p className="text-sm text-gray-500 mb-2">Ref: {selectedSuggestion.reference_number}</p>
-                  <p className="text-sm text-gray-600 mb-2">Type: {selectedSuggestion.anonymous ? 'Anonymous' : 'Identified'}</p>
-                  {!selectedSuggestion.anonymous && ((selectedSuggestion as any).submitter_name || (selectedSuggestion as any).submitter_email) && (
-                    <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                      <p className="font-medium text-blue-900">Submitter Information:</p>
-                      {(selectedSuggestion as any).submitter_name && <p className="text-blue-800">Name: {(selectedSuggestion as any).submitter_name}</p>}
-                      {(selectedSuggestion as any).submitter_email && <p className="text-blue-800">Email: {(selectedSuggestion as any).submitter_email}</p>}
-                    </div>
-                  )}
-                  <p className="text-gray-700 whitespace-pre-wrap">{selectedSuggestion.description}</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      value={selectedSuggestion.status}
-                      onChange={(e) => updateSuggestion(selectedSuggestion.id, { status: e.target.value as SuggestionStatus })}
-                      disabled={updating}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <div className="mt-4 flex gap-1 border-b border-gray-200 -mb-4 sm:-mb-6">
+                  {([
+                    { key: 'details', label: 'Details' },
+                    { key: 'manage', label: 'Manage' },
+                    { key: 'respond', label: 'Respond' }
+                  ] as const).map((tab) => (
                     <button
-                      onClick={() => updateSuggestion(selectedSuggestion.id, { priority: !selectedSuggestion.priority })}
-                      disabled={updating}
-                      className={`w-full px-3 py-2 rounded-md border ${
-                        selectedSuggestion.priority
-                          ? 'bg-orange-50 border-orange-300 text-orange-700'
-                          : 'bg-gray-50 border-gray-300 text-gray-700'
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
+                        activeTab === tab.key
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      {selectedSuggestion.priority ? '★ High Priority' : 'Mark as High Priority'}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                {activeTab === 'details' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Category</p>
+                        <p className="text-sm font-medium text-gray-900">{CATEGORY_LABELS[selectedSuggestion.category]}</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                        <span className={`inline-flex items-center px-2 py-1 mt-1 text-xs font-medium rounded-full ${STATUS_COLORS[selectedSuggestion.status]}`}>
+                          {getStatusIcon(selectedSuggestion.status)}
+                          <span className="ml-1">{STATUS_LABELS[selectedSuggestion.status]}</span>
+                        </span>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Priority</p>
+                        <p className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                          {selectedSuggestion.priority ? (
+                            <>
+                              <Star className="h-4 w-4 text-orange-500 fill-current" />
+                              High Priority
+                            </>
+                          ) : 'Normal'}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Type</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedSuggestion.anonymous ? 'Anonymous' : 'Identified'}</p>
+                      </div>
+                    </div>
+
+                    {!selectedSuggestion.anonymous && ((selectedSuggestion as any).submitter_name || (selectedSuggestion as any).submitter_email) && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm">
+                        <p className="font-medium text-blue-900">Submitter Information</p>
+                        {(selectedSuggestion as any).submitter_name && <p className="text-blue-800">Name: {(selectedSuggestion as any).submitter_name}</p>}
+                        {(selectedSuggestion as any).submitter_email && <p className="text-blue-800">Email: {(selectedSuggestion as any).submitter_email}</p>}
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Submitted</p>
+                      <p className="text-sm text-gray-600 mb-3">{formatDate(selectedSuggestion.created_at)}</p>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Description</p>
+                      <p className="text-gray-700 whitespace-pre-wrap">{selectedSuggestion.description}</p>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'manage' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={selectedSuggestion.status}
+                        onChange={(e) => updateSuggestion(selectedSuggestion.id, { status: e.target.value as SuggestionStatus })}
+                        disabled={updating}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                      <button
+                        onClick={() => updateSuggestion(selectedSuggestion.id, { priority: !selectedSuggestion.priority })}
+                        disabled={updating}
+                        className={`w-full px-3 py-2 rounded-md border ${
+                          selectedSuggestion.priority
+                            ? 'bg-orange-50 border-orange-300 text-orange-700'
+                            : 'bg-gray-50 border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        {selectedSuggestion.priority ? '★ High Priority' : 'Mark as High Priority'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'respond' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Add Management Response</label>
+                    <textarea
+                      value={responseText}
+                      onChange={(e) => setResponseText(e.target.value)}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Provide feedback or update to the employee..."
+                    />
+                    <button
+                      onClick={addResponse}
+                      disabled={updating || !responseText.trim()}
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Add Response
                     </button>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Add Management Response</label>
-                  <textarea
-                    value={responseText}
-                    onChange={(e) => setResponseText(e.target.value)}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Provide feedback or update to the employee..."
-                  />
-                  <button
-                    onClick={addResponse}
-                    disabled={updating || !responseText.trim()}
-                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    Add Response
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           </div>
