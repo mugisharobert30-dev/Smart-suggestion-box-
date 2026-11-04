@@ -96,29 +96,29 @@ export default function TrackSuggestion() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-8">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Track Your Suggestion</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Track Your Suggestion</h1>
           <p className="text-gray-600">
             Enter your reference number to check the status and responses
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <form onSubmit={handleSearch} className="flex gap-3">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={referenceNumber}
               onChange={(e) => setReferenceNumber(e.target.value)}
               placeholder="Enter reference number (e.g., SG-241027-AB12)"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+              className="w-full flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
               required
             />
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="w-full sm:w-auto justify-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {loading ? (
                 'Searching...'
@@ -141,13 +141,13 @@ export default function TrackSuggestion() {
 
         {suggestion && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-1">{suggestion.title}</h2>
-                  <p className="text-sm text-gray-500">Ref: {suggestion.reference_number}</p>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 break-words">{suggestion.title}</h2>
+                  <p className="text-sm text-gray-500 break-all">Ref: {suggestion.reference_number}</p>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 shrink-0">
                   {getStatusIcon(suggestion.status)}
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[suggestion.status as keyof typeof STATUS_COLORS]}`}>
                     {STATUS_LABELS[suggestion.status as keyof typeof STATUS_LABELS]}
@@ -155,7 +155,7 @@ export default function TrackSuggestion() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 text-sm">
                 <div>
                   <span className="text-gray-500">Category:</span>
                   <span className="ml-2 text-gray-900">{CATEGORY_LABELS[suggestion.category as keyof typeof CATEGORY_LABELS]}</span>
@@ -176,7 +176,7 @@ export default function TrackSuggestion() {
 
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">Description</p>
-                <p className="text-gray-900 whitespace-pre-wrap">{suggestion.description}</p>
+                <p className="text-gray-900 whitespace-pre-wrap break-words">{suggestion.description}</p>
               </div>
 
               {suggestion.priority && (
@@ -187,16 +187,16 @@ export default function TrackSuggestion() {
             </div>
 
             {responses.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Management Responses</h3>
                 <div className="space-y-4">
                   {responses.map((response) => (
                     <div key={response.id} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-2">
                         <span className="text-sm font-medium text-blue-900">Management Response</span>
                         <span className="text-xs text-blue-700">{formatDate(response.created_at)}</span>
                       </div>
-                      <p className="text-blue-800 whitespace-pre-wrap">{response.response_text}</p>
+                      <p className="text-blue-800 whitespace-pre-wrap break-words">{response.response_text}</p>
                     </div>
                   ))}
                 </div>

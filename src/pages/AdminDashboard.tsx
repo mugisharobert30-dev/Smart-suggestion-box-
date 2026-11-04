@@ -348,34 +348,36 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+          <div className="flex items-center justify-between gap-2 h-16">
+            <div className="flex items-center min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Admin Dashboard</h1>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
               {role === 'superadmin' && (
                 <button
                   onClick={() => setShowAdmins(true)}
-                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600"
+                  aria-label="Manage admins"
+                  className="flex items-center px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600"
                 >
-                  <Users className="h-4 w-4 mr-1" />
-                  Manage Admins
+                  <Users className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Manage Admins</span>
                 </button>
               )}
               <button
                 onClick={handleSignOut}
-                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600"
+                aria-label="Sign out"
+                className="flex items-center px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600"
               >
-                <LogOut className="h-4 w-4 mr-1" />
-                Sign Out
+                <LogOut className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Sign Out</span>
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg border border-gray-200">
             <div className="flex items-center">
               <MessageSquare className="h-8 w-8 text-blue-600" />
@@ -416,8 +418,8 @@ export default function AdminDashboard() {
 
         <div className="bg-white rounded-lg border border-gray-200 mb-6">
           <div className="p-4 border-b border-gray-200">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex-1 min-w-64">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              <div className="w-full sm:flex-1 sm:min-w-64">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
@@ -433,7 +435,7 @@ export default function AdminDashboard() {
               <select
                 value={filters.category}
                 onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Categories</option>
                 {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
@@ -443,7 +445,7 @@ export default function AdminDashboard() {
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Status</option>
                 {Object.entries(STATUS_LABELS).map(([key, label]) => (
@@ -453,7 +455,7 @@ export default function AdminDashboard() {
               <select
                 value={filters.priority}
                 onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Priorities</option>
                 <option value="true">High Priority</option>
@@ -461,7 +463,7 @@ export default function AdminDashboard() {
               </select>
               <button
                 onClick={fetchSuggestions}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                className="w-full sm:w-auto justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
               >
                 <Filter className="h-4 w-4 mr-2" />
                 Apply
@@ -470,7 +472,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[720px]">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ref</th>
@@ -542,11 +544,11 @@ export default function AdminDashboard() {
         </div>
 
         {selectedSuggestion && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">Manage Suggestion</h2>
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Manage Suggestion</h2>
                   <button
                     onClick={() => setSelectedSuggestion(null)}
                     className="text-gray-400 hover:text-gray-600"
@@ -556,9 +558,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">{selectedSuggestion.title}</h3>
+                  <h3 className="font-semibold text-gray-900 mb-1 break-words">{selectedSuggestion.title}</h3>
                   <p className="text-sm text-gray-500 mb-2">Ref: {selectedSuggestion.reference_number}</p>
                   <p className="text-sm text-gray-600 mb-2">Type: {selectedSuggestion.anonymous ? 'Anonymous' : 'Identified'}</p>
                   {!selectedSuggestion.anonymous && ((selectedSuggestion as any).submitter_name || (selectedSuggestion as any).submitter_email) && (
@@ -571,7 +573,7 @@ export default function AdminDashboard() {
                   <p className="text-gray-700 whitespace-pre-wrap">{selectedSuggestion.description}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <select
@@ -624,11 +626,11 @@ export default function AdminDashboard() {
         )}
 
         {showAdmins && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Manage Admins</h2>
+              <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Manage Admins</h2>
                   <p className="text-sm text-gray-500">Create an account and grant it admin access.</p>
                 </div>
                 <button
@@ -643,7 +645,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-5">
+              <div className="p-4 sm:p-6 space-y-5">
                 {adminError && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">{adminError}</div>
                 )}

@@ -93,9 +93,9 @@ export default function SubmitSuggestion() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-8">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Submit a Suggestion</h1>
             <p className="text-gray-600">
@@ -145,7 +145,7 @@ export default function SubmitSuggestion() {
 
             {suggestedCategory && formData.description.length > 10 && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-blue-700">
                     <span className="font-medium">Smart suggestion:</span> We think this might be related to "{suggestedCategory}"
                   </p>

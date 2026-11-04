@@ -31,17 +31,17 @@ export default function SubmitSuccess() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8">
       <div className="max-w-md w-full mx-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Suggestion Submitted!</h1>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 sm:p-6 text-center">
+          <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 text-green-500 mx-auto mb-4" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Suggestion Submitted!</h1>
           <p className="text-gray-600 mb-6">
             Thank you for your suggestion. Your feedback has been received.
           </p>
 
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-gray-600 mb-2">Reference Number</p>
-            <div className="flex items-center justify-center space-x-2">
-              <code className="text-lg font-mono font-bold text-blue-600 bg-white px-3 py-1 rounded border">
+            <div className="flex items-center justify-center gap-2">
+              <code className="text-base sm:text-lg font-mono font-bold text-blue-600 bg-white px-2 sm:px-3 py-1 rounded border break-all">
                 {referenceNumber}
               </code>
               <button

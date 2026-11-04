@@ -4,19 +4,19 @@ import { MessageSquarePlus, Search, Shield } from 'lucide-react'
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center">
-          <MessageSquarePlus className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <MessageSquarePlus className="h-12 w-12 sm:h-16 sm:w-16 text-blue-600 mx-auto mb-4" />
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
             Smart Company Suggestion Box
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-base sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Share your ideas, feedback, and suggestions to help improve our workplace, 
             services, and operations. Your voice matters.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mt-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12">
           <Link
             to="/submit"
             className="block p-6 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all"
@@ -51,7 +51,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="mt-8 sm:mt-12 bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
           <h3 className="text-lg font-semibold text-blue-900 mb-2">How it works</h3>
           <ul className="space-y-2 text-blue-800">
             <li>• Submit your suggestion in under a minute</li>

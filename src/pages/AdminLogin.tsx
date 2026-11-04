@@ -58,7 +58,7 @@ export default function AdminLogin() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold text-gray-900">Admin Login</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Login</h2>
           <p className="mt-2 text-sm text-gray-600">
             Sign in to access the management dashboard
           </p>
