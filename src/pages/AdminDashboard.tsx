@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { 
   LogOut, Filter, Search, Download, MessageSquare, 
   Clock, CheckCircle, AlertCircle, XCircle, Star,
-  UserPlus, Users
+  UserPlus, Users, Pencil, Trash2
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { formatDate, isAdminRole } from '../utils/helpers'
 import { 
   CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS, 
 } from '../types'
-import type { SuggestionCategory, SuggestionStatus } from '../types'
+import type { SuggestionCategory, SuggestionStatus, Response } from '../types'
 
 interface Suggestion {
   id: string
@@ -47,6 +47,9 @@ export default function AdminDashboard() {
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null)
   const [activeTab, setActiveTab] = useState<'details' | 'manage' | 'respond'>('details')
   const [responseText, setResponseText] = useState('')
+  const [decision, setDecision] = useState<'accepted' | 'rejected' | ''>('')
+  const [responses, setResponses] = useState<Response[]>([])
+  const [responsesLoading, setResponsesLoading] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
@@ -75,6 +78,14 @@ export default function AdminDashboard() {
       fetchAdmins()
     }
   }, [user])
+
+  useEffect(() => {
+    if (selectedSuggestion) {
+      fetchResponses(selectedSuggestion.id)
+    } else {
+      setResponses([])
+    }
+  }, [selectedSuggestion?.id])
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -283,23 +294,61 @@ export default function AdminDashboard() {
     }
   }
 
-  const addResponse = async () => {
-    if (!selectedSuggestion || !responseText.trim()) return
+  const fetchResponses = async (suggestionId: string) => {
+    setResponsesLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('responses')
+        .select('*')
+        .eq('suggestion_id', suggestionId)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      setResponses((data || []) as Response[])
+    } catch (error) {
+      console.error('Error fetching responses:', error)
+      setResponses([])
+    } finally {
+      setResponsesLoading(false)
+    }
+  }
+
+  const submitResponse = async (nextDecision: 'accepted' | 'rejected') => {
+    if (!selectedSuggestion) return
 
     setUpdating(true)
     try {
-      const { error } = await supabase
-        .from('responses')
-        .insert({
-          suggestion_id: selectedSuggestion.id,
-          admin_id: user.id,
-          response_text: responseText.trim()
-        })
+      const fallback =
+        nextDecision === 'accepted' ? 'Suggestion accepted.' : 'Suggestion rejected.'
+      const payload: Record<string, unknown> = {
+        suggestion_id: selectedSuggestion.id,
+        admin_id: user.id,
+        response_text: responseText.trim() || fallback,
+        decision: nextDecision
+      }
+
+      let { error } = await supabase.from('responses').insert(payload)
+
+      if (error && /decision/i.test(error.message)) {
+        delete payload.decision
+        ;({ error } = await supabase.from('responses').insert(payload))
+      }
 
       if (error) throw error
 
+      const { error: statusError } = await supabase
+        .from('suggestions')
+        .update({ status: nextDecision, updated_at: new Date().toISOString() })
+        .eq('id', selectedSuggestion.id)
+
+      if (statusError) throw statusError
+
       setResponseText('')
-      alert('Response added successfully')
+      setDecision('')
+      setSelectedSuggestion({ ...selectedSuggestion, status: nextDecision })
+      fetchResponses(selectedSuggestion.id)
+      fetchSuggestions()
+      fetchStats()
     } catch (error) {
       console.error('Error adding response:', error)
       alert('Error adding response')
@@ -554,7 +603,11 @@ export default function AdminDashboard() {
                     <p className="text-sm text-gray-500">Ref: {selectedSuggestion.reference_number}</p>
                   </div>
                   <button
-                    onClick={() => setSelectedSuggestion(null)}
+                    onClick={() => {
+                      setSelectedSuggestion(null)
+                      setResponseText('')
+                      setDecision('')
+                    }}
                     className="text-gray-400 hover:text-gray-600 text-2xl leading-none shrink-0"
                   >
                     ×
@@ -664,21 +717,118 @@ export default function AdminDashboard() {
                 )}
 
                 {activeTab === 'respond' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Add Management Response</label>
-                    <textarea
-                      value={responseText}
-                      onChange={(e) => setResponseText(e.target.value)}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Provide feedback or update to the employee..."
-                    />
+                  <div className="space-y-5">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                        Conversation History
+                      </h3>
+                      {responsesLoading ? (
+                        <p className="text-sm text-gray-500">Loading previous responses...</p>
+                      ) : responses.length === 0 ? (
+                        <p className="text-sm text-gray-500">
+                          No responses yet. This suggestion is under review.
+                        </p>
+                      ) : (
+                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                          {responses.map((response) => {
+                            const isAccepted = response.decision === 'accepted'
+                            const isRejected = response.decision === 'rejected'
+                            return (
+                              <div
+                                key={response.id}
+                                className={`p-3 rounded-md border ${
+                                  isAccepted
+                                    ? 'bg-green-50 border-green-200'
+                                    : isRejected
+                                      ? 'bg-red-50 border-red-200'
+                                      : 'bg-blue-50 border-blue-200'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span
+                                    className={`text-xs font-medium ${
+                                      isAccepted
+                                        ? 'text-green-700'
+                                        : isRejected
+                                          ? 'text-red-700'
+                                          : 'text-blue-700'
+                                    }`}
+                                  >
+                                    {isAccepted ? 'Accepted' : isRejected ? 'Rejected' : 'Comment'}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {formatDate(response.created_at)}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                                  {response.response_text}
+                                </p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Your Decision
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDecision('accepted')}
+                          disabled={updating}
+                          className={`flex items-center justify-center px-3 py-2 rounded-md border font-medium disabled:opacity-50 ${
+                            decision === 'accepted'
+                              ? 'bg-green-600 border-green-600 text-white'
+                              : 'bg-white border-gray-300 text-gray-700 hover:bg-green-50'
+                          }`}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDecision('rejected')}
+                          disabled={updating}
+                          className={`flex items-center justify-center px-3 py-2 rounded-md border font-medium disabled:opacity-50 ${
+                            decision === 'rejected'
+                              ? 'bg-red-600 border-red-600 text-white'
+                              : 'bg-white border-gray-300 text-gray-700 hover:bg-red-50'
+                          }`}
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Comment <span className="text-gray-400 font-normal">(optional)</span>
+                      </label>
+                      <textarea
+                        value={responseText}
+                        onChange={(e) => setResponseText(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Add a comment to explain your decision..."
+                      />
+                    </div>
+
                     <button
-                      onClick={addResponse}
-                      disabled={updating || !responseText.trim()}
-                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                      onClick={() => decision && submitResponse(decision)}
+                      disabled={updating || !decision}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                     >
-                      Add Response
+                      {updating
+                        ? 'Sending...'
+                        : decision === 'accepted'
+                          ? 'Send Acceptance'
+                          : decision === 'rejected'
+                            ? 'Send Rejection'
+                            : 'Select Accept or Reject'}
                     </button>
                   </div>
                 )}
@@ -823,18 +973,22 @@ export default function AdminDashboard() {
                             <button
                               type="button"
                               onClick={() => startEditAdmin(admin)}
-                              className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                              aria-label="Edit admin"
+                              title="Edit admin"
+                              className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 hover:text-blue-800"
                             >
-                              Edit
+                              <Pencil className="h-4 w-4" />
                             </button>
                             {admin.user_id !== user?.id && (
                               <button
                                 type="button"
                                 onClick={() => deleteAdmin(admin)}
                                 disabled={adminSaving}
-                                className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                                aria-label="Delete admin"
+                                title="Delete admin"
+                                className="p-1.5 rounded-md text-red-600 hover:bg-red-50 hover:text-red-800 disabled:opacity-50"
                               >
-                                Delete
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             )}
                           </div>

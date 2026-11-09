@@ -71,7 +71,7 @@ export default function SubmitSuggestion() {
           anonymous: isAnonymous,
           submitter_name: hasIdentity ? formData.submitterName.trim() || null : null,
           submitter_email: hasIdentity ? formData.submitterEmail.trim() || null : null,
-          status: 'submitted',
+          status: 'under_review',
           priority: false
         })
         .select()

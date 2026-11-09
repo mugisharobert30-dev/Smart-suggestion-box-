@@ -38,6 +38,7 @@ export interface Response {
   suggestion_id: string
   admin_id: string
   response_text: string
+  decision: 'accepted' | 'rejected' | null
   created_at: string
 }
 

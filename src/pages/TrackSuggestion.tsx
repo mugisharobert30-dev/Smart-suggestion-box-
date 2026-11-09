@@ -20,6 +20,7 @@ interface SuggestionData {
 interface ResponseData {
   id: string
   response_text: string
+  decision: 'accepted' | 'rejected' | null
   created_at: string
   admin_id: string
 }
@@ -190,15 +191,52 @@ export default function TrackSuggestion() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Management Responses</h3>
                 <div className="space-y-4">
-                  {responses.map((response) => (
-                    <div key={response.id} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-2">
-                        <span className="text-sm font-medium text-blue-900">Management Response</span>
-                        <span className="text-xs text-blue-700">{formatDate(response.created_at)}</span>
+                  {responses.map((response) => {
+                    const isAccepted = response.decision === 'accepted'
+                    const isRejected = response.decision === 'rejected'
+                    return (
+                      <div
+                        key={response.id}
+                        className={`p-4 rounded-lg border ${
+                          isAccepted
+                            ? 'bg-green-50 border-green-200'
+                            : isRejected
+                              ? 'bg-red-50 border-red-200'
+                              : 'bg-blue-50 border-blue-200'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-2">
+                          <span
+                            className={`text-sm font-medium ${
+                              isAccepted
+                                ? 'text-green-900'
+                                : isRejected
+                                  ? 'text-red-900'
+                                  : 'text-blue-900'
+                            }`}
+                          >
+                            {isAccepted
+                              ? 'Suggestion Accepted'
+                              : isRejected
+                                ? 'Suggestion Rejected'
+                                : 'Management Response'}
+                          </span>
+                          <span className="text-xs text-gray-600">{formatDate(response.created_at)}</span>
+                        </div>
+                        <p
+                          className={`whitespace-pre-wrap break-words ${
+                            isAccepted
+                              ? 'text-green-800'
+                              : isRejected
+                                ? 'text-red-800'
+                                : 'text-blue-800'
+                          }`}
+                        >
+                          {response.response_text}
+                        </p>
                       </div>
-                      <p className="text-blue-800 whitespace-pre-wrap break-words">{response.response_text}</p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
