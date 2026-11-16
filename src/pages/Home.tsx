@@ -8,7 +8,7 @@ export default function Home() {
         <div className="text-center">
           <MessageSquarePlus className="h-12 w-12 sm:h-16 sm:w-16 text-blue-600 mx-auto mb-4" />
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Smart Company Suggestion Box
+            Drop Your Suggestion
           </h1>
           <p className="text-base sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Share your ideas, feedback, and suggestions to help improve our workplace, 
